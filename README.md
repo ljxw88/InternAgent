@@ -273,3 +273,72 @@ We provide the tasks mentioned in our technical report as examples. Each task ha
   year={2025}
 }
 ```
+
+
+## 🤖 Running with LiteLLM + GitHub Copilot
+
+This fork is pre-configured to use **LiteLLM** as a local proxy, routing all InternAgent LLM calls through **GitHub Copilot** models (gpt-4o, o3-mini, etc.) — no OpenAI API key required.
+
+### Prerequisites
+
+- A GitHub account with an active **GitHub Copilot** subscription
+- - A GitHub personal access token with `copilot` scope
+ 
+  - ### Setup
+ 
+  - **1. Install dependencies**
+  - ```bash
+    conda create -n InternAgent python=3.11
+    conda activate InternAgent
+    pip install -r requirements.txt
+    python -m pip install -U --upgrade-strategy only-if-needed aider-chat
+    ```
+
+    **2. Configure environment**
+    ```bash
+    cp .env.example .env
+    # Edit .env and set your GITHUB_TOKEN
+    ```
+
+    **3. Start the LiteLLM proxy** (in a separate terminal)
+    ```bash
+    # Option A: Simple one-liner (uses gpt-4o via Copilot)
+    litellm --model github_copilot/gpt-4o --port 4000
+
+    # Option B: Use the full config file (recommended — includes fallbacks, retry logic)
+    litellm --config litellm_config.yaml --port 4000
+    ```
+
+    **4. Run InternAgent**
+    ```bash
+    ./scripts/run_pipeline.sh
+    ```
+
+    ### How It Works
+
+    ```
+    InternAgent agents
+           │
+           ▼ (OpenAI-compatible API calls to localhost:4000)
+      LiteLLM proxy
+           │
+           ▼ (authenticated with GITHUB_TOKEN)
+    GitHub Copilot API
+           │
+           ▼
+      gpt-4o / o3-mini
+    ```
+
+    InternAgent's `openai` provider is pointed at `http://localhost:4000` (set via `OPENAI_API_BASE_URL` in `.env`). LiteLLM translates the calls and forwards them to GitHub Copilot.
+
+    ### Switching Models
+
+    Edit `litellm_config.yaml` or use the CLI flag to switch between Copilot-available models:
+
+    | Model | LiteLLM flag |
+    |---|---|
+    | GPT-4o | `--model github_copilot/gpt-4o` |
+    | o3-mini | `--model github_copilot/o3-mini` |
+    | Claude 3.5 Sonnet | `--model github_copilot/claude-3.5-sonnet` |
+
+    Then update `model_name` in `config/config.yaml` to match.
