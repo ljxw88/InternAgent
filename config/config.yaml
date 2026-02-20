@@ -1,17 +1,16 @@
 # InternAgent Configuration
-# Reconfigured for LiteLLM + GitHub Copilot
+# Reconfigured for LiteLLM + GitHub Models
+# Primary model: Claude Sonnet 4.6 (claude-sonnet-4-5)
 #
 # HOW IT WORKS:
 #   InternAgent calls the "openai" provider, which is pointed at a local
 #   LiteLLM proxy (http://localhost:4000). LiteLLM proxies all calls to
-#   GitHub Copilot models using your GITHUB_TOKEN.
+#   GitHub Models using your GITHUB_TOKEN.
 #
 # QUICK START:
 #   1. Set GITHUB_TOKEN in your .env file
 #   2. Start LiteLLM proxy:
-#        litellm --model github_copilot/gpt-4o --port 4000
-#      Or for o3 mini:
-#        litellm --model github_copilot/o3-mini --port 4000
+#        litellm --config litellm_config.yaml --port 4000
 #   3. Run InternAgent:
 #        ./scripts/run_pipeline.sh
 
@@ -23,102 +22,93 @@ models:
   # Default provider - points to LiteLLM proxy acting as OpenAI-compatible API
     default_provider: "openai"
 
-      # OpenAI-compatible config — backed by LiteLLM proxy → GitHub Copilot
+      # OpenAI-compatible config — backed by LiteLLM proxy → GitHub Models → Claude Sonnet 4.6
         # OPENAI_API_BASE_URL and OPENAI_API_KEY are set via .env
           openai:
-              model_name: "gpt-4o"              # Model name as LiteLLM exposes it (matches --model flag)
-                  api_key: ""                        # Set via OPENAI_API_KEY env var (any string works for proxy)
+              model_name: "claude-sonnet-4-5"    # Must match model_name alias in litellm_config.yaml
+                  api_key: ""                         # Set via OPENAI_API_KEY env var (any string for proxy)
                       max_tokens: 4096
                           temperature: 0.7
 
-                            # Alternative: use o3-mini for reasoning-heavy tasks
-                              # To activate: change default_provider or agent model_provider to "openai_o3"
-                                # and run LiteLLM with: litellm --model github_copilot/o3-mini --port 4001
-                                  # openai_o3:
-                                    #   model_name: "o3-mini"
-                                      #   api_key: ""
-                                        #   max_tokens: 4096
-                                          #   temperature: 1.0
+                          # Agent Configuration
+                          agents:
+                            # Idea Generation Agent
+                              generation:
+                                  model_provider: "default"
+                                      generation_count: 15
+                                          creativity: 0.7
+                                              do_survey: true
+                                                  temperature: 0.9
 
-                                          # Agent Configuration
-                                          agents:
-                                            # Idea Generation Agent
-                                              generation:
-                                                  model_provider: "default"
-                                                      generation_count: 15
-                                                          creativity: 0.7
-                                                              do_survey: true
-                                                                  temperature: 0.9
+                                                    # Survey Agent (for literature search)
+                                                      survey:
+                                                          model_provider: "default"
+                                                              max_papers: 50
 
-                                                                    # Survey Agent (for literature search)
-                                                                      survey:
-                                                                          model_provider: "default"
-                                                                              max_papers: 50
+                                                                # Reflection Agent (for critique and analysis)
+                                                                  reflection:
+                                                                      model_provider: "default"
 
-                                                                                # Reflection Agent (for critique and analysis)
-                                                                                  reflection:
-                                                                                      model_provider: "default"
+                                                                        # Evolution Agent (for idea evolution)
+                                                                          evolution:
+                                                                              model_provider: "default"
+                                                                                  creativity_level: 0.6
+                                                                                      temperature: 0.8
+                                                                                          evolution_count: 3
 
-                                                                                        # Evolution Agent (for idea evolution)
-                                                                                          evolution:
-                                                                                              model_provider: "default"
-                                                                                                  creativity_level: 0.6
-                                                                                                      temperature: 0.8
-                                                                                                          evolution_count: 3
-                                                                                                          
-                                                                                                            # Method Development Agent
-                                                                                                              method_development:
-                                                                                                                  model_provider: "openai"          # Uses LiteLLM → GitHub Copilot gpt-4o
-                                                                                                                      model_name: "gpt-4o"
-                                                                                                                      
-                                                                                                                        # Refinement Agent
-                                                                                                                          refinement:
-                                                                                                                              model_provider: "openai"
-                                                                                                                                  model_name: "gpt-4o"
-                                                                                                                                  
-                                                                                                                                    # Ranking Agent (for idea scoring)
-                                                                                                                                      ranking:
-                                                                                                                                          model_provider: "default"
-                                                                                                                                              criteria:
-                                                                                                                                                    novelty: 0.3
-                                                                                                                                                          feasibility: 0.4
-                                                                                                                                                                impact: 0.2
-                                                                                                                                                                      clarity: 0.1
-                                                                                                                                                                      
-                                                                                                                                                                        # Scholar Agent (for literature search and relevance)
-                                                                                                                                                                          scholar:
-                                                                                                                                                                              model_provider: "default"
-                                                                                                                                                                                  search_depth: "moderate"
-                                                                                                                                                                                      max_papers: 10
-                                                                                                                                                                                          temperature: 0.6
-                                                                                                                                                                                          
-                                                                                                                                                                                          # Workflow Configuration
-                                                                                                                                                                                          workflow:
-                                                                                                                                                                                            max_iterations: 4
-                                                                                                                                                                                              top_ideas_count: 5
-                                                                                                                                                                                                top_ideas_evo: true
-                                                                                                                                                                                                  max_concurrent_tasks: 5
-                                                                                                                                                                                                  
-                                                                                                                                                                                                  # Memory/Storage Configuration
-                                                                                                                                                                                                  memory:
-                                                                                                                                                                                                    backend: "file_system"              # Options: file_system, in_memory
-                                                                                                                                                                                                      file_dir: "results"
-                                                                                                                                                                                                      
-                                                                                                                                                                                                      # External Tools Configuration
-                                                                                                                                                                                                      tools:
-                                                                                                                                                                                                        # Web Search
-                                                                                                                                                                                                          web_search:
-                                                                                                                                                                                                              enabled: true
-                                                                                                                                                                                                                  provider: "google"
-                                                                                                                                                                                                                      api_key: ""                        # Set via GOOGLE_API_KEY env var
-                                                                                                                                                                                                                          max_results: 5
-                                                                                                                                                                                                                          
-                                                                                                                                                                                                                            # Literature Search
-                                                                                                                                                                                                                              literature_search:
-                                                                                                                                                                                                                                  semantic_scholar_key: ""           # Set via S2_API_KEY env var
-                                                                                                                                                                                                                                      max_results: 10
-                                                                                                                                                                                                                                      
-                                                                                                                                                                                                                                      # Logging Configuration
-                                                                                                                                                                                                                                      logging:
-                                                                                                                                                                                                                                        level: "INFO"                        # DEBUG, INFO, WARNING, ERROR
-                                                                                                                                                                                                                                          file: "logs/intern_agent.log"
+                                                                                            # Method Development Agent — uses Claude Sonnet 4.6 via LiteLLM
+                                                                                              method_development:
+                                                                                                  model_provider: "openai"
+                                                                                                      model_name: "claude-sonnet-4-5"
+                                                                                                      
+                                                                                                        # Refinement Agent — uses Claude Sonnet 4.6 via LiteLLM
+                                                                                                          refinement:
+                                                                                                              model_provider: "openai"
+                                                                                                                  model_name: "claude-sonnet-4-5"
+                                                                                                                  
+                                                                                                                    # Ranking Agent (for idea scoring)
+                                                                                                                      ranking:
+                                                                                                                          model_provider: "default"
+                                                                                                                              criteria:
+                                                                                                                                    novelty: 0.3
+                                                                                                                                          feasibility: 0.4
+                                                                                                                                                impact: 0.2
+                                                                                                                                                      clarity: 0.1
+                                                                                                                                                      
+                                                                                                                                                        # Scholar Agent (for literature search and relevance)
+                                                                                                                                                          scholar:
+                                                                                                                                                              model_provider: "default"
+                                                                                                                                                                  search_depth: "moderate"
+                                                                                                                                                                      max_papers: 10
+                                                                                                                                                                          temperature: 0.6
+                                                                                                                                                                          
+                                                                                                                                                                          # Workflow Configuration
+                                                                                                                                                                          workflow:
+                                                                                                                                                                            max_iterations: 4
+                                                                                                                                                                              top_ideas_count: 5
+                                                                                                                                                                                top_ideas_evo: true
+                                                                                                                                                                                  max_concurrent_tasks: 5
+                                                                                                                                                                                  
+                                                                                                                                                                                  # Memory/Storage Configuration
+                                                                                                                                                                                  memory:
+                                                                                                                                                                                    backend: "file_system"               # Options: file_system, in_memory
+                                                                                                                                                                                      file_dir: "results"
+                                                                                                                                                                                      
+                                                                                                                                                                                      # External Tools Configuration
+                                                                                                                                                                                      tools:
+                                                                                                                                                                                        # Web Search
+                                                                                                                                                                                          web_search:
+                                                                                                                                                                                              enabled: true
+                                                                                                                                                                                                  provider: "google"
+                                                                                                                                                                                                      api_key: ""                         # Set via GOOGLE_API_KEY env var
+                                                                                                                                                                                                          max_results: 5
+                                                                                                                                                                                                          
+                                                                                                                                                                                                            # Literature Search
+                                                                                                                                                                                                              literature_search:
+                                                                                                                                                                                                                  semantic_scholar_key: ""            # Set via S2_API_KEY env var
+                                                                                                                                                                                                                      max_results: 10
+                                                                                                                                                                                                                      
+                                                                                                                                                                                                                      # Logging Configuration
+                                                                                                                                                                                                                      logging:
+                                                                                                                                                                                                                        level: "INFO"                         # DEBUG, INFO, WARNING, ERROR
+                                                                                                                                                                                                                          file: "logs/intern_agent.log"
