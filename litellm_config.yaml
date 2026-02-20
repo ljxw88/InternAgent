@@ -1,0 +1,50 @@
+# LiteLLM Proxy Configuration for InternAgent + GitHub Copilot
+#
+# Usage:
+#   litellm --config litellm_config.yaml --port 4000
+#
+# This starts a local OpenAI-compatible proxy that InternAgent will
+# connect to. All LLM calls are forwarded to GitHub Copilot.
+#
+# Prerequisites:
+#   - GitHub account with Copilot subscription
+#   - GITHUB_TOKEN set in your environment (or .env file)
+#   - litellm installed: pip install litellm
+
+model_list:
+  # Primary model: GPT-4o via GitHub Copilot
+    - model_name: gpt-4o
+        litellm_params:
+              model: github_copilot/gpt-4o
+                    api_key: "os.environ/GITHUB_TOKEN"   # reads GITHUB_TOKEN from environment
+
+                      # Alternative: o3-mini for reasoning-intensive tasks (hypothesis generation, reflection)
+                        - model_name: o3-mini
+                            litellm_params:
+                                  model: github_copilot/o3-mini
+                                        api_key: "os.environ/GITHUB_TOKEN"
+
+                                          # Alternative: Claude 3.5 Sonnet via Copilot (if available on your plan)
+                                            - model_name: claude-3-5-sonnet
+                                                litellm_params:
+                                                      model: github_copilot/claude-3.5-sonnet
+                                                            api_key: "os.environ/GITHUB_TOKEN"
+
+                                                            litellm_settings:
+                                                              # Drop unsupported parameters (important: Copilot doesn't support all OpenAI params)
+                                                                drop_params: true
+                                                                  # Set a request timeout (seconds)
+                                                                    request_timeout: 120
+
+                                                                    router_settings:
+                                                                      # Retry failed requests up to 3 times
+                                                                        num_retries: 3
+                                                                          # Fall back to o3-mini if gpt-4o fails
+                                                                            fallbacks:
+                                                                                - gpt-4o:
+                                                                                        - o3-mini
+
+                                                                                        general_settings:
+                                                                                          # Bind to localhost only for security
+                                                                                            master_key: "litellm-proxy"          # Matches OPENAI_API_KEY in .env
+                                                                                              port: 4000
